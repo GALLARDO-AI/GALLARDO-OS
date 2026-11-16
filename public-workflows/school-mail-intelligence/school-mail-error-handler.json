@@ -1,0 +1,98 @@
+{
+  "name": "GALLARDO — School Mail Error Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c8d2a0a9-91ec-5250-9681-f12484db94ce",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "notes": "Fires when a workflow that uses this one as its error workflow fails.",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "06a6e657-dc2f-59a8-899b-fb6e64eb744b",
+              "name": "telegram_chat_id",
+              "value": "REPLACE_WITH_TELEGRAM_CHAT_ID",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "stripBinary": true
+        }
+      },
+      "id": "1bd21065-63ce-5838-a458-3458e90b7453",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "notes": "Same chat as the main workflow.",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.telegram_chat_id }}",
+        "text": "={{ [\n  '🚨 Fallo en el workflow: ' + ($json.workflow?.name ?? 'desconocido'),\n  'Nodo: ' + ($json.execution?.lastNodeExecuted ?? $json.trigger?.error?.node?.name ?? '—'),\n  'Error: ' + String($json.execution?.error?.message ?? $json.trigger?.error?.message ?? 'desconocido').slice(0, 1500),\n  'Modo: ' + ($json.execution?.mode ?? $json.trigger?.mode ?? '—'),\n  $json.execution?.url ? 'Ejecución: ' + $json.execution.url : 'Fallo en el trigger (sin ejecución guardada).',\n].join('\\n') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "c33ce427-557d-530a-b4f8-fcf79b8037f6",
+      "name": "Send Error Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        0
+      ],
+      "notes": "Telegram alert with workflow, node, error and execution link.",
+      "notesInFlow": false,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Send Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid"
+  }
+}
